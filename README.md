@@ -1,2 +1,2 @@
-# SpartaInterview
-면접 제출용입니다.
+# SpartaCodeSample
+코드 제출용입니다.
