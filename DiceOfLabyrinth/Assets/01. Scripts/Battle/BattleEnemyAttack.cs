@@ -38,14 +38,14 @@ public class BattleEnemyAttack : MonoBehaviour
 
         isEnemyAttacking = true;
         enemySkillData = BattleManager.Instance.Enemy.currentSkill;
-        EnemyAttackTest();
+        SelectTarget();
 
         yield return new WaitForSeconds(tempWaitAttackAnimEnd);
 
         BattleManager.Instance.EndEnemyTurn();
     }
 
-    public void EnemyAttackTest()
+    public void SelectTarget()
     {
         BattleManager battleManager = BattleManager.Instance;
 
@@ -56,7 +56,7 @@ public class BattleEnemyAttack : MonoBehaviour
         {
             EnemySkill skill = enemySkillData.Skills[i];
             int targetCount = skill.TragetCount;
-            int provability = skill.FrontLineProbability;            
+            int provability = skill.FrontLineProbability;
 
             targetIndexTest = targetGetterDictionary[skill.Method](targetCount, provability);
 
@@ -163,8 +163,8 @@ public class BattleEnemyAttack : MonoBehaviour
                 int damage = skillValue * battleManager.Enemy.CurrentAtk - character.CurrentDEF;
                 if (damage < 0) damage = 0;
 
-                character.TakeDamage(damage);
                 UIManager.Instance.BattleUI.BattleUILog.WriteBattleLog(battleManager.Enemy.Data.EnemyName, character.CharNameKr, damage, false);
+                character.TakeDamage(damage);
 
                 if (skill.Debuff == EnemyDebuff.None) continue;
                 else

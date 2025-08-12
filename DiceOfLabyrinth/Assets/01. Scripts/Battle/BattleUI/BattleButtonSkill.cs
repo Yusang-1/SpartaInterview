@@ -5,27 +5,26 @@ public class BattleButtonSkill : AbstractBattleButton
 {
     BattleCharacterInBattle character;
     Button button;
-    Image image;
-    int index;
+    [SerializeField] Image skillImage;
+    [SerializeField] Image charImage;
+    [SerializeField] int index;
     GameObject characterPrefab;
 
 
     public override void Setting()
     {
-        GetIndex();
         button = GetComponent<Button>();
-        image = GetComponent<Image>();
-        character = BattleManager.Instance.PartyData.Characters[index-1];
-        characterPrefab = BattleManager.Instance.PartyData.Characters[index - 1].Prefab;
+        character = BattleManager.Instance.PartyData.Characters[index];
+        characterPrefab = BattleManager.Instance.PartyData.Characters[index].Prefab;
         SpriteSetting();
-
     }
 
     private void SpriteSetting()
     {
         if (character != null && character.character.CharacterData != null && character.character.CharacterData.icon != null)
         {
-            image.sprite = character.character.CharacterData.activeSO.SkillIcon;
+            skillImage.sprite = character.character.CharacterData.activeSO.SkillIcon;
+            charImage.sprite = character.character.CharacterData.icon;
         }
     }
 
@@ -53,6 +52,11 @@ public class BattleButtonSkill : AbstractBattleButton
 
     public override void OnPush()
     {
+        if (!character.character.CanUseSkill)
+        {
+            Debug.Log(character.CharNameKr + "의 스킬 쿨타임이 남아있어 사용할 수 없습니다. (남은 쿨타임: " + character.character.CurrentSkillCooldown + ")");
+            return;
+        }
         if (character.character.UsingSkill)
         {
             Debug.Log(character.CharNameKr+"는 이미 스킬을 사용 중입니다.");
@@ -65,8 +69,8 @@ public class BattleButtonSkill : AbstractBattleButton
         character.character.UseActiveSkill(BattleManager.Instance.PartyData.DefaultCharacters, BattleManager.Instance.Enemy);        
     }
 
-    private void GetIndex()
-    {
-        index = gameObject.transform.GetSiblingIndex();
-    }
+    //private void GetIndex()
+    //{
+    //    index = gameObject.transform.GetSiblingIndex();
+    //}
 }

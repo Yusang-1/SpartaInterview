@@ -135,6 +135,24 @@ public class BattleUILog : MonoBehaviour
         writeLogCoroutine = WriteLogCoroutine(logString);
         StartCoroutine(writeLogCoroutine);
     }
+    public void WriteBattleLog(string enemyName, string passiveName, string description)
+    {
+        if (currentLogIndex == maxLogIndex)
+        {
+            MakeNewLog();
+        }
+
+        string logString = $"<color=red>{enemyName}</color> : <color=blue>{passiveName}</color>사용 : {description}";
+
+        if (isWriting == true)
+        {
+            stashedLogs.Add(logString);
+            return;
+        }
+
+        writeLogCoroutine = WriteLogCoroutine(logString);
+        StartCoroutine(writeLogCoroutine);
+    }
     #endregion
 
     IEnumerator WriteLogCoroutine(string logString = null)
@@ -187,7 +205,12 @@ public class BattleUILog : MonoBehaviour
     }
 
     public void TurnOffAllLogs()
-    {
+    {     
+        for(int i = numOfInitialLogs; i < logs.Count; i++)
+        {
+            Destroy(logs[i]);
+        }
+
         currentLogIndex = 0;
         Vector2 contentSize;
         contentSize = content.sizeDelta;
@@ -203,6 +226,11 @@ public class BattleUILog : MonoBehaviour
     {
         if(stashedLogs.Count > 0)
         {
+            if (currentLogIndex == maxLogIndex)
+            {
+                MakeNewLog();
+            }
+
             StopCoroutine(writeLogCoroutine);
 
             writeLogCoroutine = WriteLogCoroutine(stashedLogs[0]);

@@ -19,11 +19,12 @@ public class BattleButtonRollDice : AbstractBattleButton
         {
             case DetailedTurnState.Enter:
                 ChangeEndTurnToRoll();
+                ChangeRollUI();
                 rollButton.interactable = true;
                 break;
             case DetailedTurnState.Roll:
                 rollButton.interactable = false;
-                UIManager.Instance.BattleUI.TempButton();
+                UIManager.Instance.BattleUI.TempButton(false);
                 break;
             case DetailedTurnState.RollEnd:
                 if (DiceManager.Instance.RollRemain == 0)
@@ -37,7 +38,7 @@ public class BattleButtonRollDice : AbstractBattleButton
                 break;
             case DetailedTurnState.Attack:
                 rollButton.interactable = false;
-                UIManager.Instance.BattleUI.TempButton();
+                UIManager.Instance.BattleUI.TempButton(true);
                 break;
             case DetailedTurnState.AttackEnd:
                 rollButton.interactable = true;
@@ -56,7 +57,18 @@ public class BattleButtonRollDice : AbstractBattleButton
         {
             diceManager.RollDice();
 
-            battleManager.UIValueChanger.ChangeUIText(BattleTextUIEnum.Reroll, diceManager.RollRemain.ToString());
+            // 캐릭터 PrepareAttack() 실행
+            var battleCharacters = BattleManager.Instance.PartyData.Characters;
+            for (int i = 0; i < battleCharacters.Length; i++)
+            {
+                if (battleCharacters[i].IsDead) continue;
+                if (battleManager.PartyData.DeadIndex.Contains(i)) continue;
+
+                var characterPrefab = battleCharacters[i].Prefab;
+                characterPrefab.GetComponent<SpawnedCharacter>().PrepareAttack();
+            }
+
+            ChangeRollUI();
             diceManager.DiceHolding.GetFixedList();
             
             battleManager.BattlePlayerTurnState.ChangeDetailedTurnState(DetailedTurnState.Roll);
@@ -64,21 +76,26 @@ public class BattleButtonRollDice : AbstractBattleButton
         else
         {
             rollButton.interactable = false;
-
             battleManager.BattlePlayerTurnState.ChangeDetailedTurnState(DetailedTurnState.EndTurn);
             battleManager.EndPlayerTurn();
         }
     }
 
+    private void ChangeRollUI()
+    {
+        string st = $"({DiceManager.Instance.RollRemain.ToString()})";
+        BattleManager.Instance.UIValueChanger.ChangeUIText(BattleTextUIEnum.Reroll, st);
+    }
+
     private void ChangeRollToEndTurn()
     {
         isRollOver = true;
-        text.text = "End Turn";
+        text.text = "턴 종료";
     }
 
     private void ChangeEndTurnToRoll()
     {
         isRollOver = false;
-        text.text = "Roll";
+        text.text = "굴리기";
     }
 }

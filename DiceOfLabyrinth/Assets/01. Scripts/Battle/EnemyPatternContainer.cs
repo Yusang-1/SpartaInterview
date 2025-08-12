@@ -4,6 +4,8 @@ using System.Collections.Generic;
 public class EnemyPatternContainer : MonoBehaviour
 {
     [SerializeField] SOEnemySkill[] enemySkillDatas;
+    [SerializeField] SOEnemyPassive[] enemyPassiveDatas;
+
     private string skillName;
     private string skillDescription;
 
@@ -12,7 +14,7 @@ public class EnemyPatternContainer : MonoBehaviour
         BattleManager battleManager = BattleManager.Instance;
 
         List<int> pattern = battleManager.Enemy.Data.ActiveSkills;
-        int patternLength = battleManager.Enemy.Data.ActiveSkills.Count;
+        int patternLength = pattern.Count;
         int Skill_Index = (battleManager.BattleTurn - 1) % patternLength;
         
         int skill_Index = pattern[Skill_Index];
@@ -23,6 +25,18 @@ public class EnemyPatternContainer : MonoBehaviour
 
         skillName = skill.SkillName;
         skillDescription = skill.SkillDescription;        
+    }
+
+    public void GetPassive()
+    {
+        EnemyPassiveMaker enemyPassiveMaker = new EnemyPassiveMaker();
+
+        enemyPassiveMaker.MakeSkill();
+    }
+
+    public SOEnemyPassive GetPassiveSO(int index)
+    {
+        return enemyPassiveDatas[index];
     }
 
     public string GetSkillNameText()

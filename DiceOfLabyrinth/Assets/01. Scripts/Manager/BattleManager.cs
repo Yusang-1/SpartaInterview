@@ -42,7 +42,7 @@ public class BattleManager : MonoBehaviour
 
     public BattleCharacterAttack CharacterAttack;
     public BattleEnemyAttack EnemyAttack;
-    public EnemyPatternContainer EnemyPatternContainer;
+    public EnemyPatternContainer EnemyPatternContainer;    
     
     public BattleStateMachine StateMachine;
     public DetailedTurnState CurrentDetailedState;
@@ -52,11 +52,11 @@ public class BattleManager : MonoBehaviour
     public IBattleTurnState I_FinishBattleState;
     public BattleStatePlayerTurn BattlePlayerTurnState;
 
-    public EngravingBuffMaker EngravingBuffMaker = new EngravingBuffMaker();
+    public ISkillMaker EngravingBuffMaker = new EngravingBuffMaker();
     public EngravingBuffContainer EngravingBuffs = new EngravingBuffContainer();
     public EngravingAdditionalStatus EngravingAdditionalStatus;
 
-    public ArtifactBuffMaker ArtifactBuffMaker = new ArtifactBuffMaker();
+    public ISkillMaker ArtifactBuffMaker = new ArtifactBuffMaker();
     public ArtifactBuffContainer ArtifactBuffs = new ArtifactBuffContainer();
     public ArtifactAdditionalStatus ArtifactAdditionalStatus;
 
@@ -91,6 +91,8 @@ public class BattleManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (InputManager.Instance == null) return;
+
         InputManager.Instance.BattleInputEnd();
     }
 
@@ -115,10 +117,24 @@ public class BattleManager : MonoBehaviour
         StateMachine.ChangeState(I_EnterBattleState);
     }
 
+    private void GetStartData(BattleStartData data) //start시 호출되도록
+    {
+        Enemy = new BattleEnemy(data.selectedEnemy);
+
+        PartyData = new BattlePartyData(data.battleCharacters, data.artifacts, data.engravings);
+
+        manastoneAmount = data.manaStone;
+    }
+
+    private void CheckDataChanged()
+    {
+
+    }
+
     public void EnterBattleSettings()
     {
-        EngravingBuffMaker.MakeEngravingBuff();
-        ArtifactBuffMaker.MakeArtifactBuff();
+        EngravingBuffMaker.MakeSkill();
+        ArtifactBuffMaker.MakeSkill();
         BattleSpawner.SpawnCharacters();
         BattleSpawner.SpawnEnemy();
 
@@ -154,21 +170,7 @@ public class BattleManager : MonoBehaviour
 
         PartyData = null;
         InBattleStage = false;
-    }
-
-    private void GetStartData(BattleStartData data) //start시 호출되도록
-    {
-        Enemy = new BattleEnemy(data.selectedEnemy);
-
-        PartyData = new BattlePartyData(data.battleCharacters, data.artifacts, data.engravings);
-        
-        manastoneAmount = data.manaStone;
-    }
-
-    private void CheckDataChanged()
-    {
-
-    }
+    }        
 
     public void EndBattle(bool isWon = true)
     {
@@ -205,6 +207,13 @@ public class BattleManager : MonoBehaviour
         }
     }    
 
+    //public void ChangeState()
+    //{
+    //    IBattleTurnState state;
+
+    //    StateMachine.ChangeState(state);
+    //}
+
     public void EndPlayerTurn()
     {
         StateMachine.ChangeState(I_EnemyTurnState);
@@ -225,7 +234,7 @@ public class BattleManager : MonoBehaviour
 
         cost = Mathf.Clamp(cost + iNum, 0, MaxCost);
         currentCost = cost;
-        string st = $"{currentCost} / {MaxCost}";
+        string st = $"{currentCost}/{MaxCost}";
         UIValueChanger.ChangeUIText(BattleTextUIEnum.Cost, st);
     }
 
@@ -239,7 +248,7 @@ public class BattleManager : MonoBehaviour
         }
         cost = Mathf.Clamp(cost - iNum, 0, MaxCost);
         currentCost = cost;
-        string st = $"{currentCost} / {MaxCost}";
+        string st = $"{currentCost}/{MaxCost}";
         UIValueChanger.ChangeUIText(BattleTextUIEnum.Cost, st);
         ArtifactBuffs.ActionSpendCost();
     }    
@@ -254,12 +263,17 @@ public class BattleEnemy : IDamagable
     private int currentDef;
     private int currentBarrier;
     private bool isDead;
+    private bool isBarrierOn;
     public float DebuffAtk;
     public float DebuffDef;
+
+    public int AdditionalAtk;
+    public int AdditionalDef;
+
     public EnemyData Data => data;
     public int CurrentHP => currentHP;
-    public int CurrentAtk => currentAtk;
-    public int CurrentDef => currentDef;
+    public int CurrentAtk => currentAtk + AdditionalAtk;
+    public int CurrentDef => currentDef + AdditionalDef;
     public int MaxHP => currentMaxHP;
     public bool IsDead => isDead;
     public int CurrentBarrier => currentBarrier;
@@ -277,6 +291,7 @@ public class BattleEnemy : IDamagable
     public SOEnemySkill currentSkill;
     public int currentSkill_Index;
     public List<int> currentTargetIndex;
+    public EnemyPassiveContainer PassiveContainer;
 
     int currentHittedDamage;
 
@@ -288,44 +303,55 @@ public class BattleEnemy : IDamagable
         currentAtk = data.Atk;
         currentDef = data.Def;
         isDead = false;
+        PassiveContainer = new EnemyPassiveContainer();
     }
 
     public void Heal(int amount)
     {        
         currentHP = Mathf.Clamp(currentHP + amount, 0, currentMaxHP);
+
+        UpdateHPBar();
     }
 
     public void TakeDamage(int damage)
     {
-        LayoutGroups.childControlWidth = false;
-
-        if (currentBarrier >= damage)
+        if (isBarrierOn)
         {
-            currentBarrier = currentBarrier - damage;
+            TakeDamageBarrier(damage);
         }
         else
         {
             damage = damage - currentBarrier;
-            EnemyHPHit(damage);
+            TakeDamageHP(damage);
         }
 
-        BattleManager.Instance.UIValueChanger.ChangeEnemyHpUI(HPEnumEnemy.enemy);
-        LayoutGroups.childControlWidth = true;
+        UpdateHPBar();
     }
 
-    private void EnemyHPHit(int damage)
+    private void TakeDamageBarrier(int damage)
     {
-        currentHittedDamage = damage;
-        DamageHP(damage);
+        if (currentBarrier >= damage)
+        {
+            currentBarrier -= damage;
+        }
+        else
+        {
+            isBarrierOn = false;
+            currentBarrier = 0;
+            TakeDamageHP(damage - currentBarrier);
+        }
     }
 
-    private void DamageHP(int damage)
+    private void TakeDamageHP(int damage)
     {
+        Debug.Log("TakeDamageHP");
         currentHP = Mathf.Clamp(currentHP - damage, 0, currentMaxHP);
+
+        PassiveContainer.ActionPassiveEnemyHit();
 
         if (currentHP == 0)
         {
-            EnemyIsDead();            
+            EnemyIsDead();
         }
     }
 
@@ -340,5 +366,22 @@ public class BattleEnemy : IDamagable
 
         BattleManager.Instance.BattlePlayerTurnState.ChangeDetailedTurnState(DetailedTurnState.EndTurn);
         BattleManager.Instance.EndBattle();
+    }
+
+    public void GetBarrier(float value)
+    {
+        isBarrierOn = true;
+        float amount = MaxHP * value;
+
+        currentBarrier += (int)amount;
+
+        UpdateHPBar();
+    }
+
+    private void UpdateHPBar()
+    {
+        LayoutGroups.childControlWidth = false;
+        BattleManager.Instance.UIValueChanger.ChangeEnemyHpUI(HPEnumEnemy.enemy);
+        LayoutGroups.childControlWidth = true;
     }
 }

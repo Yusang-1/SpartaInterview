@@ -33,7 +33,11 @@ public class BattleUI : MonoBehaviour
     [SerializeField] AbstractBattleButton characters;
     [SerializeField] AbstractBattleButton patternDisplayer;
     [SerializeField] AbstractBattleButton battleLog;
-
+    //[SerializeField] AbstractBattleButton char1InfoButton;
+    //[SerializeField] AbstractBattleButton char2InfoButton;
+    //[SerializeField] AbstractBattleButton char3InfoButton;
+    //[SerializeField] AbstractBattleButton char4InfoButton;
+    //[SerializeField] AbstractBattleButton char5InfoButton;
     public AbstractBattleButton Roll => roll;
     [NonSerialized] public List<AbstractBattleButton> Buttons = new List<AbstractBattleButton>();
 
@@ -56,6 +60,11 @@ public class BattleUI : MonoBehaviour
         Buttons.Add(characters);
         Buttons.Add(patternDisplayer);
         Buttons.Add(battleLog);
+        //Buttons.Add(char1InfoButton);
+        //Buttons.Add(char2InfoButton);
+        //Buttons.Add(char3InfoButton);
+        //Buttons.Add(char4InfoButton);
+        //Buttons.Add(char5InfoButton);
 
         texts = new TextMeshProUGUI[3];
         texts[0] = cost;
@@ -96,9 +105,17 @@ public class BattleUI : MonoBehaviour
         tutorialText.text = text;
     }
 
-    public void TempButton()
+    public void TempButton(bool value)
     {
-        tempInventoryButton.enabled = !tempInventoryButton.enabled;
-        tempPauseButton.enabled = !tempPauseButton.enabled;
+        if(value)
+        {
+            tempInventoryButton.enabled = true;
+            tempPauseButton.enabled = true;
+        }
+        else
+        {
+            tempInventoryButton.enabled = false;
+            tempPauseButton.enabled = false;
+        }
     }
 }
