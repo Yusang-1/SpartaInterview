@@ -1,2 +1,2 @@
-# SpartaCodeSample
-코드 제출용입니다.
+# DiceOfLabyrinthMyCode
+DiceOfLabyrinth프로젝트중 개인 코드의 모음입니다.
